@@ -62,3 +62,39 @@ sudo sysctl -p
 - restart strongswan: `systemctl restart strongswan-starter`
 
 - just in case: allow ufw OpenSSH in: `ufw allow OpenSSH` (even if it still is disabled so you won't lock yourself out if you enable later on)
+
+
+# Android Client:
+strongswan .sswan config file:
+```
+{
+  "uuid": "b7fbc1f1-1b29-4f9a-9c9e-abcdef123456",
+  "name": "VPN to My Server",
+  "type": "ikev2",
+  "remote": {
+    "addr": "<server public ip>",
+    "id": "@server"
+  },
+  "local": {
+    "id": "@alice"
+  },
+  "auth": {
+    "method": "psk",
+    "psk": "AliceSecret"
+  },
+  "child": {
+    "local_ts": ["0.0.0.0/0"],
+    "remote_ts": ["0.0.0.0/0"]
+  },
+  "ike": {
+    "integrity": ["sha256"],
+    "encryption": ["aes256"],
+    "dhgroup": ["modp2048"]
+  },
+  "esp": {
+    "integrity": ["sha256"],
+    "encryption": ["aes256"]
+  },
+  "dpd": 30
+}
+```
