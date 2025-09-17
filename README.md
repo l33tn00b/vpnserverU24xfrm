@@ -17,6 +17,12 @@ ip link set xfrm0 up
 ```
 
 - edit `/etc/ipsec.conf`
+Error: The strongswan android client doesn't support PSK. We need to choose EAP or something else.
+From: https://docs.strongswan.org/docs/latest/os/androidVpnClient.html:
+```
+PSK authentication is not supported, as it is potentially very dangerous because the client might send the hash of a weak password to a rogue VPN server. Thus we prefer EAP authentication where the server is first authenticated by an X.509 certificate and only afterwards the client uses its password.
+```
+So: FIXME: Switch to EAP
 ```
 config setup
     charondebug="ike 1, knl 1, cfg 0"
