@@ -42,3 +42,23 @@ conn roadwarrior
 
     authby=psk
 ```
+- set up secrets per user: edit `/etc/ipsec.secrets`
+```
+@server @alice : PSK "AliceSecret"
+@server @bob   : PSK "BobSecret"
+```
+
+- sysctl:
+```
+sudo tee -a /etc/sysctl.conf >/dev/null <<'EOF'
+net.ipv4.ip_forward=1
+net.ipv4.conf.all.rp_filter=0
+net.ipv4.conf.default.rp_filter=0
+net.ipv4.conf.xfrm0.rp_filter=0
+EOF
+sudo sysctl -p
+```
+
+- restart strongswan: `systemctl restart strongswan-starter`
+
+- just in case: allow ufw OpenSSH in: `ufw allow OpenSSH` (even if it still is disabled so you won't lock yourself out if you enable later on)
