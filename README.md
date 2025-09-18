@@ -7,7 +7,7 @@ VPN Server on Ubuntu 24.04 with xfrm
   - `systemctl restart ssh`
 
 - install strongswan:
-  ```apt install strongswan strongswan-pki```
+  ```apt install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-standard-plugins libstrongswan-extra-plugins```
 
 - set up xfrm interface: persistent via a systemd unit or /etc/rc.local
 ```
@@ -16,13 +16,86 @@ ip addr add 10.8.56.1/24 dev xfrm0
 ip link set xfrm0 up
 ```
 
+
+- setup CA: (10 years certificate lifetime)
+  - `ipsec pki --gen --type rsa --size 4096 --outform pem > ca.key`
+  - ```
+    ipsec pki --self --ca --lifetime 3650 \
+    --in ca.key --type rsa \
+    --dn "CN=VPN CA" \
+    --outform pem > ca.crt
+    ```
+- generate server key and certificate:
+  - `ipsec pki --gen --type rsa --size 4096 --outform pem > server.key`
+  - ```
+    ipsec pki --pub --in server.key --type rsa | ipsec pki --issue --lifetime 3650     --cacert ca.crt --cakey ca.key     --dn "CN=<server ip>"     --san "<server ip>"     --flag serverAuth --flag ikeIntermediate     --outform pem > server.crt
+    ```
+
+- install certificates and key:
+  ```
+  install -o root -g root -m 600 server.key /etc/ipsec.d/private/
+  install -o root -g root -m 644 server.crt /etc/ipsec.d/certs/
+  install -o root -g root -m 644 ca.crt     /etc/ipsec.d/cacerts/
+  ``` 
+
 - edit `/etc/ipsec.conf`
+```
+config setup
+    charondebug="ike 1, knl 1, cfg 0"
+    uniqueids=replace           # kick older session if same user logs in again
+conn rw
+    auto=add
+    keyexchange=ikev2
+
+    # --- Server side (certificate auth) ---
+    left=%any                   # listens on all addrs
+    leftid=<server ip>          # e.g. aa.bb.cc.dd  (MUST match cert SAN)
+    leftauth=pubkey
+    leftcert=server.crt
+    leftsubnet=0.0.0.0/0
+    installpolicy=no            # we route via xfrm interface
+    if_id_in=42
+    if_id_out=42
+    fragmentation=yes           # large IKE_AUTH with certs
+    mobike=yes                  # Android moves networks a lot
+
+    # --- Client side (Android) ---
+    right=%any                  # multiple roadwarriors
+    rightid=%any                # allow many usernames; secrets control who gets in
+    rightauth=eap-mschapv2
+    eap_identity=%identity
+    rightsourceip=10.100.0.0/24 # per-user virtual IPs
+    rightdns=1.1.1.1,8.8.8.8    # hand out DNS (optional)
+    rightsubnet=0.0.0.0/0       # tunnel all IPv4 from clients
+
+    # --- Cryptographic hardening ---
+    ike=aes256gcm16-prfsha256-ecp256,aes256-sha256-modp2048
+    esp=aes256gcm16,aes256-sha256
+    ike_lifetime=8h
+    lifetime=1h
+    rekeymargin=3m
+    dpdaction=clear
+    dpddelay=30s
+    dpdtimeout=120s
+```
+
+
+
+
+
+
+
+
+
+# what doesn't work:
 Error: The strongswan android client doesn't support PSK. We need to choose EAP or something else.
 From: https://docs.strongswan.org/docs/latest/os/androidVpnClient.html:
 ```
 PSK authentication is not supported, as it is potentially very dangerous because the client might send the hash of a weak password to a rogue VPN server. Thus we prefer EAP authentication where the server is first authenticated by an X.509 certificate and only afterwards the client uses its password.
 ```
 So: FIXME: Switch to EAP
+
+- edit `/etc/ipsec.conf`
 ```
 config setup
     charondebug="ike 1, knl 1, cfg 0"
