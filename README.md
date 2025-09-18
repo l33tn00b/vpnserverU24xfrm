@@ -139,7 +139,7 @@ conn rw
   sudo iptables -A INPUT -p udp --dport 500  -j ACCEPT
   sudo iptables -A INPUT -p udp --dport 4500 -j ACCEPT
   ```
-
+- ToDo: Add xfrm interface setup at boot (via unit file or rc.local)
 
 
 
