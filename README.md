@@ -79,10 +79,66 @@ conn rw
     dpdtimeout=120s
 ```
 
+- edit `ipsec.secrets`:
+```
+# This file holds shared secrets or RSA private keys for authentication.
 
+# RSA private key for this host, authenticating it to any other host
+# which knows the public part.
 
+: RSA server.key
+<username> : EAP "<password>"
+<username2> : EAP "<password2>"
+```
 
+- Android Client .sswan template file:
+```
+{
+  "uuid": "1b2f3a4c-5678-90ab-cdef-112233445566",
+  "name": "VPN Roadwarrior",
+  "type": "ikev2-eap",
+  "remote": {
+    "addr": "<server ip>",
+    "id": "<server ip>"
+  },
+  "local": {
+    "id": "<username>"
+  },
+  "auth": {
+    "method": "eap-mschapv2",
+    "eap_id": "<username>",
+    "password": "<password>"
+  },
+  "child": {
+    "local_ts": ["0.0.0.0/0"],
+    "remote_ts": ["0.0.0.0/0"]
+  },
+  "ike": {
+    "integrity": ["sha256"],
+    "encryption": ["aes256"],
+    "dhgroup": ["modp2048"]
+  },
+  "esp": {
+    "integrity": ["sha256"],
+    "encryption": ["aes256"]
+  },
+  "dpd": 30
+}
+```
 
+- transfer `ca.crt` from server and .sswan file to android client
+
+- ToDo: Setup Firewall on Server:
+  ```
+  # Example: allow your LAN behind the server
+  sudo ip route add 10.10.0.0/16 dev xfrm0
+  # (optional) NAT client internet egress via server’s WAN:
+  # pick your WAN interface (e.g. eth0)
+  sudo iptables -t nat -A POSTROUTING -o eth0 -s 10.100.0.0/24 -j MASQUERADE
+  # allow IKE/ESP from the internet
+  sudo iptables -A INPUT -p udp --dport 500  -j ACCEPT
+  sudo iptables -A INPUT -p udp --dport 4500 -j ACCEPT
+  ```
 
 
 
