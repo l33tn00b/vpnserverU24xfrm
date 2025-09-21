@@ -1,6 +1,11 @@
 # vpnserverU24xfrm
 VPN Server on Ubuntu 24.04 with xfrm
+- PSK based (doesn't work with Strongswan Android Client)
+- EAP with Passwords
+- EAP with certificates
 
+
+# Common Steps
 - disable password login:
   - change `/etc/ssh/sshd_config`
   - `rm /etc/ssh/sshd_config.d/50-cloud-init.conf`
@@ -16,7 +21,7 @@ ip addr add 10.8.56.1/24 dev xfrm0
 ip link set xfrm0 up
 ```
 
-
+# EAP only
 - setup CA: (10 years certificate lifetime)
   - `ipsec pki --gen --type rsa --size 4096 --outform pem > ca.key`
   - ```
@@ -38,6 +43,7 @@ ip link set xfrm0 up
   install -o root -g root -m 644 ca.crt     /etc/ipsec.d/cacerts/
   ``` 
 
+# EAP with Passwords
 - edit `/etc/ipsec.conf`
 ```
 config setup
@@ -85,10 +91,11 @@ conn rw
 
 # RSA private key for this host, authenticating it to any other host
 # which knows the public part.
-
+# you may also skip assigning explicit ip addresses
+# they will be chosen from the pool given
 : RSA server.key
-<username> : EAP "<password>"
-<username2> : EAP "<password2>"
+<username> : EAP "<password>" : <ip1> # e.g. 10.100.0.10
+<username2> : EAP "<password2>" : <ip2> # e.g. 10.100.0.11
 ```
 
 - Android Client .sswan template file:
@@ -143,13 +150,12 @@ conn rw
 
 
 
-# what doesn't work:
-Error: The strongswan android client doesn't support PSK. We need to choose EAP or something else.
+# Pre-Shared Key
+Strongswan Android client doesn't support PSK. We need to choose EAP or something else.
 From: https://docs.strongswan.org/docs/latest/os/androidVpnClient.html:
 ```
 PSK authentication is not supported, as it is potentially very dangerous because the client might send the hash of a weak password to a rogue VPN server. Thus we prefer EAP authentication where the server is first authenticated by an X.509 certificate and only afterwards the client uses its password.
 ```
-So: FIXME: Switch to EAP
 
 - edit `/etc/ipsec.conf`
 ```
@@ -199,37 +205,6 @@ sudo sysctl -p
 - just in case: allow ufw OpenSSH in: `ufw allow OpenSSH` (even if it still is disabled so you won't lock yourself out if you enable later on)
 
 
-# Android Client:
-strongswan .sswan config file:
-```
-{
-  "uuid": "b7fbc1f1-1b29-4f9a-9c9e-abcdef123456",
-  "name": "VPN to My Server",
-  "type": "ikev2",
-  "remote": {
-    "addr": "<server public ip>",
-    "id": "@server"
-  },
-  "local": {
-    "id": "@alice"
-  },
-  "auth": {
-    "method": "psk",
-    "psk": "AliceSecret"
-  },
-  "child": {
-    "local_ts": ["0.0.0.0/0"],
-    "remote_ts": ["0.0.0.0/0"]
-  },
-  "ike": {
-    "integrity": ["sha256"],
-    "encryption": ["aes256"],
-    "dhgroup": ["modp2048"]
-  },
-  "esp": {
-    "integrity": ["sha256"],
-    "encryption": ["aes256"]
-  },
-  "dpd": 30
-}
-```
+## Android Client:
+Strongswan Client doesn't accept PSK authentication.
+Does it work with regular Android?
