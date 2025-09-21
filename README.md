@@ -20,7 +20,7 @@ ip addr add 10.8.56.1/24 dev xfrm0
 ip link set xfrm0 up
 ```
 
-# EAP only
+# Only for EAP (i.e. password/certificate based)
 - setup CA: (10 years certificate lifetime)
   - `ipsec pki --gen --type rsa --size 4096 --outform pem > ca.key`
   - ```
@@ -148,6 +148,32 @@ conn rw
 - ToDo: Add xfrm interface setup at boot (via unit file or rc.local)
 
 
+# Client Certificates
+- create directories for client certificates
+  - `mkdir pki`
+  - `mkdir pki/certs`
+  - `mkdir pki/private`
+ 
+- generate per-user private key: 
+```ipsec pki --gen --type rsa --size 3072 --outform pem > ~/pki/private/vpnuser.key```
+
+- generate per-user certificate (10 years lifetime)
+```
+ipsec pki --pub --in ~/pki/private/vpnuser.key --type rsa | \
+ipsec pki --issue --lifetime 3650 \
+  --cacert ~/ca.crt --cakey ~/ca.key \
+  --dn "CN=vpnuser" --san "vpnuser@<yourdomain.whatever>" \
+  --outform pem > ~/pki/certs/vpnuser.crt
+```
+
+- export per-user certificate to .p12 format (for import into Strongswan client app), you will be prompted for a password. Remember it, you'll need it for importing the certificate into the Android app. `-legacy` option required for OpenSSL > v3
+```
+openssl pkcs12 -export -inkey ~/pki/private/vpnuser.key -in ~/pki/certs/vpnuser.crt \
+  -certfile ~/ca.crt -name "vpnuser" -out ~/pki/vpnuser.p12 -legacy
+```
+- transfer ca.crt and .p12 to client
+- import p12 on client (tap to import, enter password and descriptive name)
+- 
 
 # Pre-Shared Key
 Strongswan Android client doesn't support PSK. We need to choose EAP or something else.
