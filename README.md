@@ -1,5 +1,4 @@
-# vpnserverU24xfrm
-VPN Server on Ubuntu 24.04 with xfrm
+# Strongswan VPN Server on Ubuntu 24.04 using XFRM Interface (instead of VTI/pure policy based)
 - PSK based (doesn't work with Strongswan Android Client)
 - EAP with Passwords
 - EAP with certificates
