@@ -97,6 +97,11 @@ ufw enable
   ``` 
 
 # EAP with Passwords
+WTF. only scanctl syntax supports interface ids / marks?
+
+- apt install charon-systemd (will also install strongswan-swanctl)
+
+
 - edit `/etc/ipsec.conf`
 ```
 config setup
