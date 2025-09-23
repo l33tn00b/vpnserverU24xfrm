@@ -10,8 +10,15 @@
   - `rm /etc/ssh/sshd_config.d/50-cloud-init.conf`
   - `systemctl restart ssh`
 
+- enable unattended upgrades
+  
+
 - install strongswan:
   ```apt install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-standard-plugins libstrongswan-extra-plugins```
+
+- install strongswan (modern conf)
+  ```apt install charon-systemd libstrongswan-extra-plugins libcharon-extra-plugins```
+  
 
 ## set up interface (don't do this, will not survive reboot)
 - set up xfrm interface: persistent via a systemd unit or /etc/rc.local
