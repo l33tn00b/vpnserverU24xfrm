@@ -417,6 +417,8 @@ openssl pkcs12 -export -inkey ~/pki/private/vpnuser.key -in ~/pki/certs/vpnuser.
   "dpd": 30
 }
 ```
+- import on client
+- change connection type to IKEv2 EAP-TLS (Certificate)
 
 # Pre-Shared Key
 Strongswan Android client doesn't support PSK. We need to choose EAP or something else.
