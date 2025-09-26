@@ -103,8 +103,10 @@ ufw enable
   install -o root -g root -m 644 ca.crt     /etc/ipsec.d/cacerts/
   ``` 
 
+
+
 # EAP with Passwords
-WTF. only scanctl syntax supports interface ids / marks?
+WTF. only swanctl syntax supports interface ids / marks?
 
 - apt install charon-systemd (will also install strongswan-swanctl)
 
