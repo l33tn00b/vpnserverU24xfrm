@@ -217,6 +217,120 @@ conn rw
 
 
 # EAP with Client Certificates
+## Server Config (New swanctl Syntax)
+
+- put into `/etc/swanctl/swanctl.conf`:
+```
+connections {
+  rw-eap-tls {
+    version = 2
+    proposals = aes256gcm16-prfsha256-ecp256,aes256-sha256-modp2048
+
+    local_addrs = <your server ip>
+    local {
+      id = <your server ip>
+      auth = pubkey
+      certs = server.crt
+      #send_cert = always
+    }
+    remote {
+      auth = eap-tls
+      eap_id = %any
+    }
+
+    pools = rw_pool
+    dpd_delay = 30s
+
+    children {
+      net {
+        local_ts  = 0.0.0.0/0
+        remote_ts = 0.0.0.0/0
+        if_id_in  = 42   # choose as you like
+        if_id_out = 42   # make it same as above
+
+        policies  = no          # no, we want route-based
+        start_action  = start   # yes, start. else nothing will happen
+        esp_proposals = aes256gcm16,aes256-sha256
+        dpd_action    = clear
+      }
+    }
+  }
+}
+
+pools {
+  rw_pool {
+    addrs = 10.100.0.0/24    # according to your plans
+    dns   = 1.1.1.1,8.8.8.8  # or your own resolver
+  }
+}
+
+secrets {
+  private {
+    file = server.key
+  }
+}
+
+# Include config snippets
+include conf.d/*.conf
+```
+- restart: `systemctl restart strongswan`
+- check:
+  - `systemctl status strongswan`
+  - when client is connected: `ip xfrm policy` should show your if_id (42 = 0x2a)
+    ```
+    src 0.0.0.0/0 dst 0.0.0.0/0
+        dir out priority 399999
+        tmpl src <server ip> dst <client ip>
+                proto esp spi 0x4fd46c3c reqid 1 mode tunnel
+        if_id 0x2a
+    src 0.0.0.0/0 dst 0.0.0.0/0
+            dir fwd priority 399999
+            tmpl src <client ip> dst <srv ip>
+                    proto esp reqid 1 mode tunnel
+            if_id 0x2a
+    src 0.0.0.0/0 dst 0.0.0.0/0
+            dir in priority 399999
+            tmpl src <client ip> dst <server ip>
+                    proto esp reqid 1 mode tunnel
+            if_id 0x2a
+    ```
+- when client is connected `ip xfrm state` should show something along the lines of
+  ```
+  src <server ip> dst <client ip>
+        proto esp spi 0xf3bf9134 reqid 1 mode tunnel
+        replay-window 0 flag af-unspec
+        aead rfc4106(gcm(aes)) 0xcd57f280d127192e131b021b31ae7c36244aedf6afaa0c18dd40a35f8b9917692a2d65ed 128
+        encap type espinudp sport 4500 dport 56781 addr 0.0.0.0
+        anti-replay context: seq 0x0, oseq 0x0, bitmap 0x00000000
+        if_id 0x2a
+  src <client ip> dst <server ip>
+          proto esp spi 0xcef4b936 reqid 1 mode tunnel
+          replay-window 32 flag af-unspec
+          aead rfc4106(gcm(aes)) 0xeaee22a26ced9f1966d7870b2c665c7a21a23d5c113735eca7495fa52860f2c611cc9e9e 128
+          encap type espinudp sport 56781 dport 4500 addr 0.0.0.0
+          lastused 2025-09-26 17:45:07
+          anti-replay context: seq 0x7b, oseq 0x0, bitmap 0xffffffff
+          if_id 0x2a
+  src <server ip> dst <client ip>
+          proto esp spi 0x4fd46c3c reqid 1 mode tunnel
+          replay-window 0 flag af-unspec
+          aead rfc4106(gcm(aes)) 0xca1c9de01c452493727320651b4f939aae8a70cfbc41f8c48726098b762f7dd4c35ae318 128
+          encap type espinudp sport 4500 dport 56781 addr 0.0.0.0
+          anti-replay context: seq 0x0, oseq 0x0, bitmap 0x00000000
+          if_id 0x2a
+  src <client ip> dst <server ip>
+          proto esp spi 0xc96a85da reqid 1 mode tunnel
+          replay-window 32 flag af-unspec
+          aead rfc4106(gcm(aes)) 0xb33d6013a14f942c5499b23146708b5096b42f203d50aa8325fd2436b3f30706b49a6148 128
+          encap type espinudp sport 56781 dport 4500 addr 0.0.0.0
+          lastused 2025-09-26 17:33:51
+          anti-replay context: seq 0x1b, oseq 0x0, bitmap 0x07ffffff
+          if_id 0x2a
+  ```
+- 
+
+
+## Client Certificates and Config
 - create directories for client certificates
   - `mkdir pki`
   - `mkdir pki/certs`
@@ -239,7 +353,7 @@ openssl pkcs12 -export -inkey ~/pki/private/vpnuser.key -in ~/pki/certs/vpnuser.
 - import p12 on client (tap to import (not into WiFi!), enter password and descriptive name)
 - import ca.crt on client
 
-- Client config file:
+- Client config file
 ```
 {
   "uuid": "3d8f4f88-2c92-4d32-9f91-0b55a9eac101",
