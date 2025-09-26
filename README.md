@@ -13,13 +13,12 @@
 - enable unattended upgrades
   
 
-- install strongswan:
+- for traditional `ipsec.conf` install strongswan like this:
   ```apt install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-standard-plugins libstrongswan-extra-plugins```
 
-- install strongswan (modern conf)
+- for modern `swanctl.conf` install strongswan like this:
   ```apt install charon-systemd libstrongswan-extra-plugins libcharon-extra-plugins```
   
-
 ## set up interface (don't do this, will not survive reboot)
 - set up xfrm interface: persistent via a systemd unit or /etc/rc.local
 ```
