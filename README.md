@@ -91,9 +91,25 @@ At the very top of the file, just after the header comments, insert a *nat table
 
 COMMIT
 ```
+
+- accept traffic from xfrm0. Edit `/etc/ufw/rules.before` and add to the filter `*filter` section (near other ufw-before-input rules):
+  ```
+  -A ufw-before-input -i ipsec0 -j ACCEPT
+  -A ufw-before-forward -i ipsec0 -j ACCEPT
+    -A ufw-before-forward -o ipsec0 -j ACCEPT
+  ```
 - reload ufw: `ufw reload`
 
+
+
 - The only thing that's missing now is routing back to our client network
+
+## Routing
+- add route back to client network: `ip route add 10.100.0.0/24 dev xfrm0`
+
+## TODO:
+make routing persistent (/etc/network/interfaces or systemd-networkd or updown script)
+make interface creation xfrm0 persistent (see above)
 
 # Only for EAP (i.e. password/certificate based)
 - setup CA: (10 years certificate lifetime)
