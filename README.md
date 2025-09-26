@@ -70,6 +70,7 @@ sudo systemctl enable --now xfrm0.service
 ```
 
 ## Firewalling
+- edit `/etc/default/ufw`, change `DEFAULT_FORWARD_POLICY` to `ACCEPT`
 - ufw commands:
 ```
 ufw allow ssh
@@ -79,6 +80,20 @@ ufw allow in proto esp to <server ip>
 ufw allow out proto esp from <server ip>
 ufw enable
 ```
+- add masquerading for outgoing traffic: `nano /etc/ufw/before.rules`
+At the very top of the file, just after the header comments, insert a *nat table with POSTROUTING masquerade rules:
+```
+*nat
+:POSTROUTING ACCEPT [0:0]
+
+# Masquerade all traffic going out the tunnel interface
+-A POSTROUTING -o xfrm0 -j MASQUERADE
+
+COMMIT
+```
+- reload ufw: `ufw reload`
+
+- The only thing that's missing now is routing back to our client network
 
 # Only for EAP (i.e. password/certificate based)
 - setup CA: (10 years certificate lifetime)
