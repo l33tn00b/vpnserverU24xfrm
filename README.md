@@ -274,7 +274,8 @@ connections {
     children {
       net {
         local_ts  = 0.0.0.0/0
-        remote_ts = 0.0.0.0/0
+        #remote_ts = 0.0.0.0/0
+        remote_ts = 10.100.0.0/24
         if_id_in  = 42   # choose as you like
         if_id_out = 42   # make it same as above
 
