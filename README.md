@@ -2,9 +2,9 @@
 - PSK based (doesn't work with Strongswan Android Client)
 - EAP with Passwords
 - EAP with certificates
-
 - clients will be assigned IPs in 10.100.0.0/24 subnet
 - we'll assign an interface ID for in- and ourgoing traffic (42 = 0x2A)
+- IPv4-based (since the xfrm interface doesn't get an ip, no problems with IPv6 (enable forwarding, assign IPv6 addresses to clients))
 
 # Common Steps
 - disable password login:
