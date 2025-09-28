@@ -42,31 +42,18 @@ Assuming eth0 is the uderlying device:
   ```
   # /etc/systemd/system/xfrm0.service
   [Unit]
-  Description=Create and configure xfrm0 for IPsec
-  After=network-online.target
+  Description=Create xfrm0 interface for IPsec
+  After=network-pre.target
+  Before=network-online.target
   Wants=network-online.target
   
   [Service]
   Type=oneshot
+  ExecStart=/sbin/ip link add xfrm0 type xfrm if_id 42
+  # set mtu (so we may later add a firewall rule for MSS clamping)
+  ExecStart=/sbin/ip link set xfrm0 mtu 1400 up
+  ExecStart=/sbin/ip route replace 10.100.0.0/24 dev xfrm0
   RemainAfterExit=yes
-  
-  # Safe cleanup (needs a shell for redirection/||)
-  ExecStartPre=/bin/sh -c '/usr/sbin/ip link del xfrm0 2>/dev/null || true'
-  
-  # Create XFRM netdev bound to your underlay (change eth0 if needed)
-  ExecStart=/usr/sbin/ip link add xfrm0 type xfrm dev eth0 if_id 42
-  
-  # interface doesn't need an address
-  #ExecStart=/usr/sbin/ip addr add 169.254.100.1/24 dev xfrm0
-  
-  # Optional: slightly smaller MTU to avoid fragmentation through NATs
-  ExecStart=/usr/sbin/ip link set xfrm0 mtu 1400
-  
-  # Bring it up
-  ExecStart=/usr/sbin/ip link set xfrm0 up
-  
-  # On stop, remove it
-  ExecStop=/usr/sbin/ip link del xfrm0
   
   [Install]
   WantedBy=multi-user.target
