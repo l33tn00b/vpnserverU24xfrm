@@ -107,8 +107,28 @@ sudo systemctl enable --now xfrm0.service
 
 - The only thing that's missing now is routing back to our client network
 
-## Routing
-- add route back to client network: `ip route add 10.100.0.0/24 dev xfrm0`
+## Routing (Add Route Back to Client Network)
+- non-permanent (don't do this, only for testing): `ip route add 10.100.0.0/24 dev xfrm0`
+- permanent (Ubuntu 24.04 using netplan):
+  - you probably already have a .yaml config file in `/etc/netplan`
+  - add another one:
+    - `nano /etc/netplan/99-xfrm0.yaml`
+    - insert:
+      ```
+      network:
+        version: 2
+        xfrms:
+          xfrm0:
+            routes:
+              - to: 10.100.0.0/24
+                scope: link
+      ``` 
+    - netplan will merge the contents of all .yaml files in the directory when running
+        ```
+        netplan generate   # check for syntax errors
+        sudo netplan apply
+        ```
+    - 
 
 ## TODO:
 make routing persistent (/etc/network/interfaces or systemd-networkd or updown script)
