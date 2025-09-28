@@ -140,60 +140,59 @@ make interface creation xfrm0 persistent (see above)
 ## Server Config (New swanctl Syntax)
 
 - put into `/etc/swanctl/swanctl.conf`:
-```
-connections {
-  rw-eap-tls {
-    version = 2
-    proposals = aes256gcm16-prfsha256-ecp256,aes256-sha256-modp2048
-
-    local_addrs = <your server ip>
-    local {
-      id = <your server ip>
-      auth = pubkey
-      certs = server.crt
-      #send_cert = always
-    }
-    remote {
-      auth = eap-tls
-      eap_id = %any
-    }
-
-    pools = rw_pool
-    dpd_delay = 30s
-
-    children {
-      net {
-        local_ts  = 0.0.0.0/0
-        #remote_ts = 0.0.0.0/0
-        remote_ts = 10.100.0.0/24
-        if_id_in  = 42   # choose as you like
-        if_id_out = 42   # make it same as above
-
-        policies  = no          # no, we want route-based
-        start_action  = start   # yes, start. else nothing will happen
-        esp_proposals = aes256gcm16,aes256-sha256
-        dpd_action    = clear
+  ```
+  connections {
+    rw-eap-tls {
+      version = 2
+      proposals = aes256gcm16-prfsha256-ecp256,aes256-sha256-modp2048
+  
+      local_addrs = <your server ip>
+      local {
+        id = <your server ip>
+        auth = pubkey
+        certs = server.crt
+        #send_cert = always
+      }
+      remote {
+        auth = eap-tls
+        id = %any
+        eap_id = %any
+      }
+  
+      pools = rw_pool
+      dpd_delay = 30s
+  
+      children {
+        net {
+          local_ts  = 0.0.0.0/0           # full tunnel
+          remote_ts = 0.0.0.0/0
+          if_id_in  = 42
+          if_id_out = 42
+          policies = yes                  # install policies
+          start_action  = start           # establish at start
+          esp_proposals = aes256gcm16,aes256-sha256
+          dpd_action    = clear
+        }
       }
     }
   }
-}
-
-pools {
-  rw_pool {
-    addrs = 10.100.0.0/24    # according to your plans
-    dns   = 1.1.1.1,8.8.8.8  # or your own resolver
+  
+  pools {
+    rw_pool {
+      addrs = 10.100.0.0/24                # client ip range
+      dns   = 1.1.1.1,8.8.8.8              # tell clients to use these dns servers
+    }
   }
-}
-
-secrets {
-  private {
-    file = server.key
+  
+  secrets {
+    private {
+      file = server.key
+    }
   }
-}
-
-# Include config snippets
-include conf.d/*.conf
-```
+  
+  # Include config snippets
+  include conf.d/*.conf
+  ```
 - restart: `systemctl restart strongswan`
 - check:
   - `systemctl status strongswan`
