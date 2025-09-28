@@ -76,12 +76,12 @@ sudo systemctl enable --now xfrm0.service
 ## Firewalling
 - edit `/etc/default/ufw`, change `DEFAULT_FORWARD_POLICY` to `ACCEPT`
 - ufw commands:
-```
-ufw allow ssh
-ufw allow in 500,4500/udp
-ufw allow out 500,4500/udp
-ufw enable
-```
+  ```
+  ufw allow ssh
+  ufw allow in 500,4500/udp
+  ufw allow out 500,4500/udp
+  ufw enable
+  ```
 - add masquerading for outgoing traffic: `nano /etc/ufw/before.rules`
   At the very top of the file, just after the header comments, insert a *nat table with POSTROUTING masquerade rules:
   ```
