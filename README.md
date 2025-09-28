@@ -35,47 +35,47 @@
   ip route add 10.100.0.0/24 dev xfrm0
   ```
 
-## alternate (do this) set up interface via systemd unit (will survive reboot)
+## Alternate (do this) set up interface via systemd unit (will survive reboot)
 Assuming eth0 is the uderlying device:
 - edit `/etc/systemd/system/xfrm0.service`:
-```
-# /etc/systemd/system/xfrm0.service
-[Unit]
-Description=Create and configure xfrm0 for IPsec
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=oneshot
-RemainAfterExit=yes
-
-# Safe cleanup (needs a shell for redirection/||)
-ExecStartPre=/bin/sh -c '/usr/sbin/ip link del xfrm0 2>/dev/null || true'
-
-# Create XFRM netdev bound to your underlay (change eth0 if needed)
-ExecStart=/usr/sbin/ip link add xfrm0 type xfrm dev eth0 if_id 42
-
-# interface doesn't need an address
-#ExecStart=/usr/sbin/ip addr add 169.254.100.1/24 dev xfrm0
-
-# Optional: slightly smaller MTU to avoid fragmentation through NATs
-ExecStart=/usr/sbin/ip link set xfrm0 mtu 1400
-
-# Bring it up
-ExecStart=/usr/sbin/ip link set xfrm0 up
-
-# On stop, remove it
-ExecStop=/usr/sbin/ip link del xfrm0
-
-[Install]
-WantedBy=multi-user.target
-```
+  ```
+  # /etc/systemd/system/xfrm0.service
+  [Unit]
+  Description=Create and configure xfrm0 for IPsec
+  After=network-online.target
+  Wants=network-online.target
+  
+  [Service]
+  Type=oneshot
+  RemainAfterExit=yes
+  
+  # Safe cleanup (needs a shell for redirection/||)
+  ExecStartPre=/bin/sh -c '/usr/sbin/ip link del xfrm0 2>/dev/null || true'
+  
+  # Create XFRM netdev bound to your underlay (change eth0 if needed)
+  ExecStart=/usr/sbin/ip link add xfrm0 type xfrm dev eth0 if_id 42
+  
+  # interface doesn't need an address
+  #ExecStart=/usr/sbin/ip addr add 169.254.100.1/24 dev xfrm0
+  
+  # Optional: slightly smaller MTU to avoid fragmentation through NATs
+  ExecStart=/usr/sbin/ip link set xfrm0 mtu 1400
+  
+  # Bring it up
+  ExecStart=/usr/sbin/ip link set xfrm0 up
+  
+  # On stop, remove it
+  ExecStop=/usr/sbin/ip link del xfrm0
+  
+  [Install]
+  WantedBy=multi-user.target
+  ```
 
 - enable and start:
-```
-sudo systemctl daemon-reload
-sudo systemctl enable --now xfrm0.service
-```
+  ```
+  sudo systemctl daemon-reload
+  sudo systemctl enable --now xfrm0.service
+  ```
 
 ## Firewalling
 - edit `/etc/default/ufw`, change `DEFAULT_FORWARD_POLICY` to `ACCEPT`
@@ -111,33 +111,7 @@ sudo systemctl enable --now xfrm0.service
 
 - The only thing that's missing now is routing back to our client network
 
-## Routing (Add Route Back to Client Network)
-- non-permanent (don't do this, only for testing): `ip route add 10.100.0.0/24 dev xfrm0`
-- permanent (Ubuntu 24.04 using netplan doen't know about xfrms, dooh):
-  - create `/etc/systemd/system/xfrm0.service`
-    ```
-    [Unit]
-    Description=Create xfrm0 interface for IPsec
-    After=network-pre.target
-    Before=network-online.target
-    Wants=network-online.target
-    
-    [Service]
-    Type=oneshot
-    ExecStart=/sbin/ip link add xfrm0 type xfrm if_id 42
-    ExecStart=/sbin/ip link set xfrm0 up
-    ExecStart=/sbin/ip route replace 10.100.0.0/24 dev xfrm0
-    RemainAfterExit=yes
-    
-    [Install]
-    WantedBy=multi-user.target
-    ```
-    - enable it:
-      ```
-      systemctl daemon-reload
-      sudo systemctl enable xfrm0.service
-      ```
-    - 
+
 
 # Only for EAP (i.e. password/certificate based)
 - setup CA: (10 years certificate lifetime)
