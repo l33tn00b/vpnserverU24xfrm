@@ -100,11 +100,13 @@ Assuming eth0 is the uderlying device:
   # allow established/related back in
   -A ufw-before-forward -i eth0 -o xfrm0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
   ``` 
+- insert into `/etc/ufw/after.rules` just before the last `COMMIT`, right after don't log noisy broadcasts:
+  ```
+  # MSS clamping during TCP 3-Way Handshake
+  -A ufw-after-forward -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
+  ```
 
 - reload ufw: `ufw reload`
-
-
-- The only thing that's missing now is routing back to our client network
 
 
 
