@@ -1,9 +1,9 @@
-# Strongswan VPN Server on Ubuntu 24.04 using XFRM Interface (instead of VTI/pure policy based)
+# Strongswan VPN Server on Ubuntu 24.04 using XFRM Interface (instead of VTI/pure policy based) for Roadwarriors (Android Strongswan Client)
 - PSK based (doesn't work with Strongswan Android Client)
 - EAP with Passwords
 - EAP with certificates
-- clients will be assigned IPs in 10.100.0.0/24 subnet
-- we'll assign an interface ID for in- and ourgoing traffic (42 = 0x2A)
+- Clients will be assigned IPs in 10.100.0.0/24 subnet
+- We'll assign an interface ID for in- and ourgoing traffic (42 = 0x2A)
 - IPv4-based (since the xfrm interface doesn't get an ip, no problems with IPv6 (enable forwarding, assign IPv6 addresses to clients))
 
 # Common Steps
