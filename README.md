@@ -136,119 +136,6 @@ make interface creation xfrm0 persistent (see above)
   install -o root -g root -m 644 ca.crt     /etc/ipsec.d/cacerts/
   ``` 
 
-
-
-# EAP with Passwords
-WTF. only swanctl syntax supports interface ids / marks?
-
-- apt install charon-systemd (will also install strongswan-swanctl)
-
-
-- edit `/etc/ipsec.conf`
-```
-config setup
-    charondebug="ike 1, knl 1, cfg 0"
-    uniqueids=replace           # kick older session if same user logs in again
-conn rw
-    auto=add
-    keyexchange=ikev2
-
-    # --- Server side (certificate auth) ---
-    left=%any                   # listens on all addrs
-    leftid=<server ip>          # e.g. aa.bb.cc.dd  (MUST match cert SAN)
-    leftauth=pubkey
-    leftcert=server.crt
-    leftsubnet=0.0.0.0/0
-    installpolicy=no            # we route via xfrm interface
-    if_id_in=42
-    if_id_out=42
-    fragmentation=yes           # large IKE_AUTH with certs
-    mobike=yes                  # Android moves networks a lot
-
-    # --- Client side (Android) ---
-    right=%any                  # multiple roadwarriors
-    rightid=%any                # allow many usernames; secrets control who gets in
-    rightauth=eap-mschapv2
-    eap_identity=%identity
-    rightsourceip=10.100.0.0/24 # per-user virtual IPs
-    rightdns=1.1.1.1,8.8.8.8    # hand out DNS (optional)
-    rightsubnet=0.0.0.0/0       # tunnel all IPv4 from clients
-
-    # --- Cryptographic hardening ---
-    ike=aes256gcm16-prfsha256-ecp256,aes256-sha256-modp2048
-    esp=aes256gcm16,aes256-sha256
-    ike_lifetime=8h
-    lifetime=1h
-    rekeymargin=3m
-    dpdaction=clear
-    dpddelay=30s
-    dpdtimeout=120s
-```
-
-- edit `ipsec.secrets`:
-```
-# This file holds shared secrets or RSA private keys for authentication.
-
-# RSA private key for this host, authenticating it to any other host
-# which knows the public part.
-# you may also skip assigning explicit ip addresses
-# they will be chosen from the pool given
-: RSA server.key
-<username> : EAP "<password>" : <ip1> # e.g. 10.100.0.10
-<username2> : EAP "<password2>" : <ip2> # e.g. 10.100.0.11
-```
-
-- Android Client .sswan template file:
-```
-{
-  "uuid": "1b2f3a4c-5678-90ab-cdef-112233445566",
-  "name": "VPN Roadwarrior",
-  "type": "ikev2-eap",
-  "remote": {
-    "addr": "<server ip>",
-    "id": "<server ip>"
-  },
-  "local": {
-    "id": "<username>"
-  },
-  "auth": {
-    "method": "eap-mschapv2",
-    "eap_id": "<username>",
-    "password": "<password>"
-  },
-  "child": {
-    "local_ts": ["0.0.0.0/0"],
-    "remote_ts": ["0.0.0.0/0"]
-  },
-  "ike": {
-    "integrity": ["sha256"],
-    "encryption": ["aes256"],
-    "dhgroup": ["modp2048"]
-  },
-  "esp": {
-    "integrity": ["sha256"],
-    "encryption": ["aes256"]
-  },
-  "dpd": 30
-}
-```
-
-- transfer `ca.crt` from server and .sswan file to android client
-
-- ToDo: Setup Firewall on Server:
-  ```
-  # Example: allow your LAN behind the server
-  sudo ip route add 10.10.0.0/16 dev xfrm0
-  # (optional) NAT client internet egress via server’s WAN:
-  # pick your WAN interface (e.g. eth0)
-  sudo iptables -t nat -A POSTROUTING -o eth0 -s 10.100.0.0/24 -j MASQUERADE
-  # allow IKE/ESP from the internet
-  sudo iptables -A INPUT -p udp --dport 500  -j ACCEPT
-  sudo iptables -A INPUT -p udp --dport 4500 -j ACCEPT
-  ```
-- ToDo: Add xfrm interface setup at boot (via unit file or rc.local)
-
-
 # EAP with Client Certificates
 ## Server Config (New swanctl Syntax)
 
@@ -422,6 +309,121 @@ openssl pkcs12 -export -inkey ~/pki/private/vpnuser.key -in ~/pki/certs/vpnuser.
 ```
 - import on client
 - change connection type to IKEv2 EAP-TLS (Certificate)
+
+
+
+# EAP with Passwords
+WTF. only swanctl syntax supports interface ids / marks?
+
+- apt install charon-systemd (will also install strongswan-swanctl)
+
+
+- edit `/etc/ipsec.conf`
+```
+config setup
+    charondebug="ike 1, knl 1, cfg 0"
+    uniqueids=replace           # kick older session if same user logs in again
+conn rw
+    auto=add
+    keyexchange=ikev2
+
+    # --- Server side (certificate auth) ---
+    left=%any                   # listens on all addrs
+    leftid=<server ip>          # e.g. aa.bb.cc.dd  (MUST match cert SAN)
+    leftauth=pubkey
+    leftcert=server.crt
+    leftsubnet=0.0.0.0/0
+    installpolicy=no            # we route via xfrm interface
+    if_id_in=42
+    if_id_out=42
+    fragmentation=yes           # large IKE_AUTH with certs
+    mobike=yes                  # Android moves networks a lot
+
+    # --- Client side (Android) ---
+    right=%any                  # multiple roadwarriors
+    rightid=%any                # allow many usernames; secrets control who gets in
+    rightauth=eap-mschapv2
+    eap_identity=%identity
+    rightsourceip=10.100.0.0/24 # per-user virtual IPs
+    rightdns=1.1.1.1,8.8.8.8    # hand out DNS (optional)
+    rightsubnet=0.0.0.0/0       # tunnel all IPv4 from clients
+
+    # --- Cryptographic hardening ---
+    ike=aes256gcm16-prfsha256-ecp256,aes256-sha256-modp2048
+    esp=aes256gcm16,aes256-sha256
+    ike_lifetime=8h
+    lifetime=1h
+    rekeymargin=3m
+    dpdaction=clear
+    dpddelay=30s
+    dpdtimeout=120s
+```
+
+- edit `ipsec.secrets`:
+```
+# This file holds shared secrets or RSA private keys for authentication.
+
+# RSA private key for this host, authenticating it to any other host
+# which knows the public part.
+# you may also skip assigning explicit ip addresses
+# they will be chosen from the pool given
+: RSA server.key
+<username> : EAP "<password>" : <ip1> # e.g. 10.100.0.10
+<username2> : EAP "<password2>" : <ip2> # e.g. 10.100.0.11
+```
+
+- Android Client .sswan template file:
+```
+{
+  "uuid": "1b2f3a4c-5678-90ab-cdef-112233445566",
+  "name": "VPN Roadwarrior",
+  "type": "ikev2-eap",
+  "remote": {
+    "addr": "<server ip>",
+    "id": "<server ip>"
+  },
+  "local": {
+    "id": "<username>"
+  },
+  "auth": {
+    "method": "eap-mschapv2",
+    "eap_id": "<username>",
+    "password": "<password>"
+  },
+  "child": {
+    "local_ts": ["0.0.0.0/0"],
+    "remote_ts": ["0.0.0.0/0"]
+  },
+  "ike": {
+    "integrity": ["sha256"],
+    "encryption": ["aes256"],
+    "dhgroup": ["modp2048"]
+  },
+  "esp": {
+    "integrity": ["sha256"],
+    "encryption": ["aes256"]
+  },
+  "dpd": 30
+}
+```
+
+- transfer `ca.crt` from server and .sswan file to android client
+
+- ToDo: Setup Firewall on Server:
+  ```
+  # Example: allow your LAN behind the server
+  sudo ip route add 10.10.0.0/16 dev xfrm0
+  # (optional) NAT client internet egress via server’s WAN:
+  # pick your WAN interface (e.g. eth0)
+  sudo iptables -t nat -A POSTROUTING -o eth0 -s 10.100.0.0/24 -j MASQUERADE
+  # allow IKE/ESP from the internet
+  sudo iptables -A INPUT -p udp --dport 500  -j ACCEPT
+  sudo iptables -A INPUT -p udp --dport 4500 -j ACCEPT
+  ```
+- ToDo: Add xfrm interface setup at boot (via unit file or rc.local)
+
+
+
 
 # Pre-Shared Key
 Strongswan Android client doesn't support PSK. We need to choose EAP or something else.
