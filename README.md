@@ -3,6 +3,8 @@
 - EAP with Passwords
 - EAP with certificates
 
+- clients will be assigned IPs in 10.100.0.0/24 subnet
+- we'll assign an interface ID for in- and ourgoing traffic (42 = 0x2A)
 
 # Common Steps
 - disable password login:
@@ -12,18 +14,20 @@
 
 - enable unattended upgrades
   
-
 - for traditional `ipsec.conf` install strongswan like this:
   ```apt install strongswan strongswan-pki libcharon-extra-plugins libstrongswan-standard-plugins libstrongswan-extra-plugins```
 
 - for modern `swanctl.conf` install strongswan like this:
   ```apt install charon-systemd libstrongswan-extra-plugins libcharon-extra-plugins```
+
+- enable kernel IP forwarding:
+  -  write drop-in config file: `echo "net.ipv4.ip_forward=1" | sudo tee /etc/sysctl.d/99-ipforward.conf`
+  -  reload config: `sysctl --system`
   
 ## set up interface (don't do this, will not survive reboot)
 - set up xfrm interface: persistent via a systemd unit or /etc/rc.local
 ```
 ip link add xfrm0 type xfrm dev eth0 if_id 42
-ip addr add 10.8.56.1/24 dev xfrm0
 ip link set xfrm0 up
 ```
 
@@ -47,8 +51,8 @@ ExecStartPre=/bin/sh -c '/usr/sbin/ip link del xfrm0 2>/dev/null || true'
 # Create XFRM netdev bound to your underlay (change eth0 if needed)
 ExecStart=/usr/sbin/ip link add xfrm0 type xfrm dev eth0 if_id 42
 
-# Give it an address (adjust if you prefer another)
-ExecStart=/usr/sbin/ip addr add 169.254.100.1/24 dev xfrm0
+# interface doesn't need an address
+#ExecStart=/usr/sbin/ip addr add 169.254.100.1/24 dev xfrm0
 
 # Optional: slightly smaller MTU to avoid fragmentation through NATs
 ExecStart=/usr/sbin/ip link set xfrm0 mtu 1400
@@ -76,30 +80,29 @@ sudo systemctl enable --now xfrm0.service
 ufw allow ssh
 ufw allow in 500,4500/udp
 ufw allow out 500,4500/udp
-ufw allow in proto esp to <server ip>
-ufw allow out proto esp from <server ip>
 ufw enable
 ```
 - add masquerading for outgoing traffic: `nano /etc/ufw/before.rules`
-At the very top of the file, just after the header comments, insert a *nat table with POSTROUTING masquerade rules:
-```
-*nat
-:POSTROUTING ACCEPT [0:0]
-
-# Masquerade all traffic going out the tunnel interface
--A POSTROUTING -o xfrm0 -j MASQUERADE
-
-COMMIT
-```
-
-- accept traffic from xfrm0. Edit `/etc/ufw/rules.before` and add to the filter `*filter` section (near other ufw-before-input rules):
+  At the very top of the file, just after the header comments, insert a *nat table with POSTROUTING masquerade rules:
   ```
-  -A ufw-before-input -i ipsec0 -j ACCEPT
-  -A ufw-before-forward -i ipsec0 -j ACCEPT
-    -A ufw-before-forward -o ipsec0 -j ACCEPT
+  *nat
+  :POSTROUTING ACCEPT [0:0]
+  
+  # Masquerade all traffic going out the tunnel interface
+  -A POSTROUTING -s 10.100.0.0/24 -o eth0 -j MASQUERADE
+  
+  COMMIT
+  ```
+
+- accept traffic from xfrm0. Edit `/etc/ufw/before.rules` and add to the filter `*filter` section (near other ufw-before-input rules):
+  ```
+  # allow in/out on xfrm0
+  -A ufw-before-input -i xfrm0 -j ACCEPT
+  -A ufw-before-output -o xfrm0 -j ACCEPT
+  -A ufw-before-forward -i xfrm0 -j ACCEPT
+  -A ufw-before-forward -o xfrm0 -j ACCEPT
   ```
 - reload ufw: `ufw reload`
-
 
 
 - The only thing that's missing now is routing back to our client network
