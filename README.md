@@ -24,12 +24,16 @@
   -  write drop-in config file: `echo "net.ipv4.ip_forward=1" | sudo tee /etc/sysctl.d/99-ipforward.conf`
   -  reload config: `sysctl --system`
   
-## set up interface (don't do this, will not survive reboot)
+## Set Up Interface and Routing (don't do this, will not survive reboot)
 - set up xfrm interface: persistent via a systemd unit or /etc/rc.local
-```
-ip link add xfrm0 type xfrm dev eth0 if_id 42
-ip link set xfrm0 up
-```
+  ```
+  ip link add xfrm0 type xfrm dev eth0 if_id 42
+  ip link set xfrm0 up
+  ```
+- routing
+  ```
+  ip route add 10.100.0.0/24 dev xfrm0
+  ```
 
 ## alternate (do this) set up interface via systemd unit (will survive reboot)
 Assuming eth0 is the uderlying device:
@@ -110,25 +114,30 @@ sudo systemctl enable --now xfrm0.service
 ## Routing (Add Route Back to Client Network)
 - non-permanent (don't do this, only for testing): `ip route add 10.100.0.0/24 dev xfrm0`
 - permanent (Ubuntu 24.04 using netplan doen't know about xfrms, dooh):
-  - Create `/etc/systemd/network/xfrm0.netdev:`
+  - create `/etc/systemd/system/xfrm0.service`
     ```
-    [NetDev]
-    Name=xfrm0
-    Kind=xfrm
-    ```
-  - Create `/etc/systemd/network/xfrm0.network`:
-    ```
-    [Match]
-    Name=xfrm0
+    [Unit]
+    Description=Create xfrm0 interface for IPsec
+    After=network-pre.target
+    Before=network-online.target
+    Wants=network-online.target
     
-    [Network]
-    # no address needed
-    # add the pool route
-    [Route]
-    Destination=10.100.0.0/24
-    Scope=link
+    [Service]
+    Type=oneshot
+    ExecStart=/sbin/ip link add xfrm0 type xfrm if_id 42
+    ExecStart=/sbin/ip link set xfrm0 up
+    ExecStart=/sbin/ip route replace 10.100.0.0/24 dev xfrm0
+    RemainAfterExit=yes
+    
+    [Install]
+    WantedBy=multi-user.target
     ```
-  - Restart systemd-networkd: `systemctl restart systemd-networkd`
+    - enable it:
+      ```
+      systemctl daemon-reload
+      sudo systemctl enable xfrm0.service
+      ```
+    - 
 
 # Only for EAP (i.e. password/certificate based)
 - setup CA: (10 years certificate lifetime)
