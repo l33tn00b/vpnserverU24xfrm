@@ -109,30 +109,26 @@ sudo systemctl enable --now xfrm0.service
 
 ## Routing (Add Route Back to Client Network)
 - non-permanent (don't do this, only for testing): `ip route add 10.100.0.0/24 dev xfrm0`
-- permanent (Ubuntu 24.04 using netplan):
-  - you probably already have a .yaml config file in `/etc/netplan`
-  - add another one:
-    - `nano /etc/netplan/99-xfrm0.yaml`
-    - insert:
-      ```
-      network:
-        version: 2
-        xfrms:
-          xfrm0:
-            routes:
-              - to: 10.100.0.0/24
-                scope: link
-      ``` 
-    - netplan will merge the contents of all .yaml files in the directory when running
-        ```
-        netplan generate   # check for syntax errors
-        sudo netplan apply
-        ```
-    - 
-
-## TODO:
-make routing persistent (/etc/network/interfaces or systemd-networkd or updown script)
-make interface creation xfrm0 persistent (see above)
+- permanent (Ubuntu 24.04 using netplan doen't know about xfrms, dooh):
+  - Create `/etc/systemd/network/xfrm0.netdev:`
+    ```
+    [NetDev]
+    Name=xfrm0
+    Kind=xfrm
+    ```
+  - Create `/etc/systemd/network/xfrm0.network`:
+    ```
+    [Match]
+    Name=xfrm0
+    
+    [Network]
+    # no address needed
+    # add the pool route
+    [Route]
+    Destination=10.100.0.0/24
+    Scope=link
+    ```
+  - Restart systemd-networkd: `systemctl restart systemd-networkd`
 
 # Only for EAP (i.e. password/certificate based)
 - setup CA: (10 years certificate lifetime)
