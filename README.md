@@ -5,6 +5,7 @@
 - Clients will be assigned IPs in 10.100.0.0/24 subnet
 - We'll assign an interface ID for in- and ourgoing traffic (42 = 0x2A)
 - IPv4-based (since the xfrm interface doesn't get an ip, no problems with IPv6 (enable forwarding, assign IPv6 addresses to clients))
+- `eth0` is our outgoing device
 
 # Common Steps
 - disable password login:
@@ -78,7 +79,6 @@ Assuming eth0 is the uderlying device:
   ```
 
 ## Firewalling
-- edit `/etc/default/ufw`, change `DEFAULT_FORWARD_POLICY` to `ACCEPT`
 - ufw commands:
   ```
   ufw allow ssh
@@ -106,6 +106,14 @@ Assuming eth0 is the uderlying device:
   -A ufw-before-forward -i xfrm0 -j ACCEPT
   -A ufw-before-forward -o xfrm0 -j ACCEPT
   ```
+- In `/etc/ufw/before.rules`, inside the `*filter` section before `COMMIT`, add:
+  ```
+  # allow traffic from VPN clients out to WAN
+  -A ufw-before-forward -i xfrm0 -o eth0 -j ACCEPT
+  # allow established/related back in
+  -A ufw-before-forward -i eth0 -o xfrm0 -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+  ``` 
+
 - reload ufw: `ufw reload`
 
 
