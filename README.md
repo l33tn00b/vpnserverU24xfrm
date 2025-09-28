@@ -217,37 +217,22 @@ make interface creation xfrm0 persistent (see above)
 - when client is connected `ip xfrm state` should show something along the lines of
   ```
   src <server ip> dst <client ip>
-        proto esp spi 0xf3bf9134 reqid 1 mode tunnel
-        replay-window 0 flag af-unspec
-        aead rfc4106(gcm(aes)) 0xcd57f280d127192e131b021b31ae7c36244aedf6afaa0c18dd40a35f8b9917692a2d65ed 128
-        encap type espinudp sport 4500 dport 56781 addr 0.0.0.0
-        anti-replay context: seq 0x0, oseq 0x0, bitmap 0x00000000
-        if_id 0x2a
-  src <client ip> dst <server ip>
-          proto esp spi 0xcef4b936 reqid 1 mode tunnel
-          replay-window 32 flag af-unspec
-          aead rfc4106(gcm(aes)) 0xeaee22a26ced9f1966d7870b2c665c7a21a23d5c113735eca7495fa52860f2c611cc9e9e 128
-          encap type espinudp sport 56781 dport 4500 addr 0.0.0.0
-          lastused 2025-09-26 17:45:07
-          anti-replay context: seq 0x7b, oseq 0x0, bitmap 0xffffffff
-          if_id 0x2a
-  src <server ip> dst <client ip>
-          proto esp spi 0x4fd46c3c reqid 1 mode tunnel
+          proto esp spi 0xcd4c2fa7 reqid 1 mode tunnel
           replay-window 0 flag af-unspec
-          aead rfc4106(gcm(aes)) 0xca1c9de01c452493727320651b4f939aae8a70cfbc41f8c48726098b762f7dd4c35ae318 128
-          encap type espinudp sport 4500 dport 56781 addr 0.0.0.0
-          anti-replay context: seq 0x0, oseq 0x0, bitmap 0x00000000
+          aead rfc4106(gcm(aes)) 0xf80f7e704492825f85ff1c4e372177073c9dcecdeec71e22b49d3986d9977dff4606e964 128
+          encap type espinudp sport 4500 dport 56569 addr 0.0.0.0
+          lastused 2025-09-28 13:48:02
+          anti-replay context: seq 0x0, oseq 0x9, bitmap 0x00000000
           if_id 0x2a
   src <client ip> dst <server ip>
-          proto esp spi 0xc96a85da reqid 1 mode tunnel
+          proto esp spi 0xc90c336b reqid 1 mode tunnel
           replay-window 32 flag af-unspec
-          aead rfc4106(gcm(aes)) 0xb33d6013a14f942c5499b23146708b5096b42f203d50aa8325fd2436b3f30706b49a6148 128
-          encap type espinudp sport 56781 dport 4500 addr 0.0.0.0
-          lastused 2025-09-26 17:33:51
-          anti-replay context: seq 0x1b, oseq 0x0, bitmap 0x07ffffff
+          aead rfc4106(gcm(aes)) 0x22234d8f7786ae2e7d679a2699682581509d6d09920ea231d31dfab059e38b422e73fd1a 128
+          encap type espinudp sport 56569 dport 4500 addr 0.0.0.0
+          lastused 2025-09-28 13:48:02
+          anti-replay context: seq 0xc, oseq 0x0, bitmap 0x00000fff
           if_id 0x2a
-  ```
-- 
+    ```
 
 
 ## Client Certificates and Config
@@ -274,40 +259,40 @@ openssl pkcs12 -export -inkey ~/pki/private/vpnuser.key -in ~/pki/certs/vpnuser.
 - import ca.crt on client
 
 - Client config file
-```
-{
-  "uuid": "3d8f4f88-2c92-4d32-9f91-0b55a9eac101",
-  "name": "Company VPN",
-  "type": "ikev2-eap",
-  "remote": {
-    "addr": "<server ip>",
-    "id": "<server ip>"
-  },
-  "local": {
-    "id": "vpnuser"
-  },
-  "auth": {
-    "method": "eap-tls",
-    "client_cert_alias": "vpnuser"
-  },
-  "child": {
-    "local_ts": ["0.0.0.0/0"],
-    "remote_ts": ["0.0.0.0/0"]
-  },
-  "ike": {
-    "encryption": ["aes256"],
-    "integrity": ["sha256"],
-    "dhgroup": ["modp2048"]
-  },
-  "esp": {
-    "encryption": ["aes256"],
-    "integrity": ["sha256"]
-  },
-  "dpd": 30
-}
-```
+  ```
+  {
+    "uuid": "3d8f4f88-2c92-4d32-9f91-0b55a9eac101",
+    "name": "Company VPN (vpnuser)",
+    "type": "ikev2-eap-tls",
+    "remote": {
+      "addr": "<server ip>",
+      "id": "<server ip>"
+    },
+    "local": {
+      "id": "vpnuser"
+    },
+    "auth": {
+      "method": "eap-tls",
+      "client_cert_alias": "vpnuser"
+    },
+    "child": {
+      "local_ts": ["0.0.0.0/0"],
+      "remote_ts": ["0.0.0.0/0"]
+    },
+    "ike": {
+      "encryption": ["aes256"],
+      "integrity": ["sha256"],
+      "dhgroup": ["modp2048"]
+    },
+    "esp": {
+      "encryption": ["aes256"],
+      "integrity": ["sha256"]
+    },
+    "dpd": 30
+  }
+  ```
 - import on client
-- change connection type to IKEv2 EAP-TLS (Certificate)
+- choose previously imported client profile
 
 
 
