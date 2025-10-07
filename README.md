@@ -134,6 +134,15 @@ Assuming eth0 is the uderlying device:
   ``` 
 
 # EAP with Client Certificates
+# PKI setup
+- apt install libtss2-tcti-tabrmd0
+- apt install strongswan-pki
+- mkdir pki
+- mkdir pki/private
+- mkdir pki/certs
+- generate ca private key: `cd private && pki --gen > caKey.der`
+- self-sign ca certificate using ca private key: `cd certs && pki --self --in ../private/caKey.der --dn "C=CH, O=strongSwan, CN=strongSwan CA" --ca --lifetime 3650 > caCert.der`
+
 ## Server Config (New swanctl Syntax)
 
 - put into `/etc/swanctl/swanctl.conf`:
