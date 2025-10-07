@@ -111,7 +111,7 @@ Assuming eth0 is the uderlying device:
 
 
 
-# Only for EAP (i.e. password/certificate based)
+# Only for EAP (i.e. password/certificate based, using deprecated ipsec command)
 - setup CA: (10 years certificate lifetime)
   - `ipsec pki --gen --type rsa --size 4096 --outform pem > ca.key`
   - ```
@@ -140,11 +140,33 @@ Assuming eth0 is the uderlying device:
 - mkdir pki
 - mkdir pki/private
 - mkdir pki/certs
-- redo: generate ca private key: `cd private && pki --gen > caKey.der`
-- redo: self-sign ca certificate using ca private key: `cd certs && pki --self --in ../private/caKey.der --dn "C=CH, O=strongSwan, CN=strongSwan CA" --ca --lifetime 3650 > caCert.der`
+- generate CA private key: `ipsec pki --gen --type rsa --size 4096 --outform pem > ca.key`
+- self-sign CA certificate:
+  ```
+  ipsec pki --self --ca --lifetime 3650 \
+  --in ca.key --type rsa \
+  --dn "CN=VPN CA" \
+  --outform pem > ca.crt
+  ```
 - generate server private key: `pki --gen --type rsa --size 4096 --outform pem > server.key`
-- sign server private key: ` pki --pub --in server.key --type rsa | pki --issue --lifetime 3650     --cacert ca.crt --cakey ca.key     --dn "<your server ip>"     --san "<your server ip>"     --flag serverAuth --flag ikeIntermediate     --outform pem > server.crt`
-
+- sign server private key: (this is a bit more complicated because of setting the SAN to our server's IP, some versions of pki will bail):
+  - generate CSR file for OpenSSL: `openssl req -new -key server.key -out server.csr -subj "/CN=<your server ip>"`
+  - generate SAN/usage ext file:
+    ```
+    cat > san.ext <<'EOF'
+    subjectAltName = IP:<your server ip>
+    basicConstraints = CA:FALSE
+    keyUsage = digitalSignature, keyEncipherment
+    extendedKeyUsage = serverAuth
+    EOF
+    ```
+  - sign server private key with CA:
+    ```
+    openssl x509 -req -in server.csr \
+    -CA ca.crt -CAkey ca.key -CAcreateserial \
+    -out server.crt -days 3650 -sha256 \
+    -extfile san.ext
+    ```
 # copy certificates/keys to directories
 - Put server cert in /etc/swanctl/x509/
 - Put server key in /etc/swanctl/private/
