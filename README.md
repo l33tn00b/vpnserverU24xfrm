@@ -8,6 +8,7 @@
 - `eth0` is our outgoing device
 
 # Common Steps
+- push ssh key to server
 - disable password login:
   - change `/etc/ssh/sshd_config`
   - `rm /etc/ssh/sshd_config.d/50-cloud-init.conf`
