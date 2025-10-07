@@ -140,8 +140,17 @@ Assuming eth0 is the uderlying device:
 - mkdir pki
 - mkdir pki/private
 - mkdir pki/certs
-- generate ca private key: `cd private && pki --gen > caKey.der`
-- self-sign ca certificate using ca private key: `cd certs && pki --self --in ../private/caKey.der --dn "C=CH, O=strongSwan, CN=strongSwan CA" --ca --lifetime 3650 > caCert.der`
+- redo: generate ca private key: `cd private && pki --gen > caKey.der`
+- redo: self-sign ca certificate using ca private key: `cd certs && pki --self --in ../private/caKey.der --dn "C=CH, O=strongSwan, CN=strongSwan CA" --ca --lifetime 3650 > caCert.der`
+- generate server private key: `pki --gen --type rsa --size 4096 --outform pem > server.key`
+- sign server private key: ` pki --pub --in server.key --type rsa | pki --issue --lifetime 3650     --cacert ca.crt --cakey ca.key     --dn "<your server ip>"     --san "<your server ip>"     --flag serverAuth --flag ikeIntermediate     --outform pem > server.crt`
+
+# copy certificates/keys to directories
+- Put server cert in /etc/swanctl/x509/
+- Put server key in /etc/swanctl/private/
+- Put CA that issued client certs in /etc/swanctl/x509ca/
+- (Optionally) put a separate CA for the server cert into /etc/swanctl/x509ca/
+- Make sure key perms are strict: chmod 600 /etc/swanctl/private/server.key
 
 ## Server Config (New swanctl Syntax)
 
