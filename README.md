@@ -72,6 +72,8 @@ Assuming eth0 is the uderlying device:
   ufw allow ssh
   ufw allow in 500,4500/udp
   ufw allow out 500,4500/udp
+  ufw allow from 10.8.101.0/24 to 10.100.1.1 port 53 proto udp
+  ufw allow from 10.8.101.0/24 to 10.100.1.1 port 8080 proto tcp
   ufw enable
   ```
 - add masquerading for outgoing traffic: `nano /etc/ufw/before.rules`
