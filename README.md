@@ -298,7 +298,7 @@ openssl pkcs12 -export -inkey ~/pki/private/vpnuser.key -in ~/pki/certs/vpnuser.
 - import p12 on client (tap to import (not into WiFi!), enter password and descriptive name)
 - import ca.crt on client
 
-- Client config file
+- Client config file (.sswan)
   ```
   {
     "uuid": "3d8f4f88-2c92-4d32-9f91-0b55a9eac101",
