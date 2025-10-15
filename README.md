@@ -123,6 +123,8 @@ Assuming eth0 is the uderlying device:
 
 - reload ufw: `ufw reload`
 
+## Set up Wireguard Tunnel for Admin Access
+ToDo. See Wireguard Server (other repo)
 
 
 # Only for EAP (i.e. password/certificate based, using deprecated ipsec command)
