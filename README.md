@@ -123,6 +123,12 @@ Assuming eth0 is the uderlying device:
 
 - reload ufw: `ufw reload`
 
+### Block Known Public DNS Resolvers
+- block any comms from client subnets to udp port 53
+- get list of public resolvers: https://public-dns.info/
+- write a little script adding all these servers to our firewall rules (ouch) from client subnets (include dot, doh, dnscrypt, doq)
+- maybe start with well-known resolvers like google, cloudflare, quad9...
+
 ## Set up Wireguard Tunnel for Admin Access
 ToDo. See Wireguard Server (other repo)
 
