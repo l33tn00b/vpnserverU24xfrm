@@ -67,6 +67,17 @@ Assuming eth0 is the uderlying device:
   sudo systemctl enable --now xfrm0.service
   ```
 
+## Set up dummy interface for AdGuard Server
+- `nano /etc/netplan/99_config.yaml`
+  ```
+  network:
+  dummy-devices:
+    dummy0:
+      addresses:
+        - 10.100.1.1/24
+  ```
+- `netplan apply`
+  
 ## Firewalling
 - ufw commands:
   ```
