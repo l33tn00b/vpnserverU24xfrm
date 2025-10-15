@@ -6,7 +6,7 @@
 - We'll assign an interface ID for in- and ourgoing traffic (42 = 0x2A)
 - IPv4-based (since the xfrm interface doesn't get an ip, no problems with IPv6 (enable forwarding, assign IPv6 addresses to clients))
 - `eth0` is our outgoing device
-- DNS server (Adguard) running on dummy0 interface (IP address 10.100.1.1, web interface on port 8080) (ufw rules for admin via wireguard tunnel)
+- DNS server (Adguard) running on dummy0 interface (IP address 10.100.1.1, web interface on port 8080) (ufw rules for admin via wireguard tunnel, ip address range 10.8.101.0/24 )
 
 # Common Steps
 - push ssh key to server
